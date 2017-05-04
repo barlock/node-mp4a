@@ -1,0 +1,18 @@
+{
+  "name": "node-mp4a",
+  "version": "1.0.0",
+  "description": "node version of mp4a",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "barlockm@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^1.1.3",
+    "fluent-ffmpeg": "^2.1.2",
+    "glob": "^7.1.1",
+    "node-status": "^1.0.0",
+    "pretty-ms": "^2.1.0"
+  }
+}
