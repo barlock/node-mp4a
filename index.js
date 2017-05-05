@@ -3,15 +3,19 @@
 const async = require("async"),
     chalk = require("chalk"),
     glob = require("glob"),
+    argv = require("yargs").argv,
     ffmpeg = require("fluent-ffmpeg"),
     fs = require("fs"),
     path = require("path"),
     status = require("node-status"),
     prettyMs = require("pretty-ms"),
     preset = require("./lib/preset"),
-    console = status.console();
-
-const globPath = "/Volumes/Library/TV/American Dad!/Season 1/*.mkv";
+    console = status.console(),
+    globPath = path.resolve(__dirname, argv._[0]),
+    subExtentions = [
+        "srt", "sub", "ssa", "ass", "stl", "pjs", "jss", "rt", "smi"
+    ],
+    pattern = "{uptime.green} {spinner.cyan} Converted: {convert.custom} | {convert.percentage} {convert.bar}";
 
 // Only supports mkv right now
 // ignores image based subtitles
@@ -24,10 +28,6 @@ const globPath = "/Volumes/Library/TV/American Dad!/Season 1/*.mkv";
  * Given: A non mp4
  *   When: Converting to an mp4 without any recognizable english streams
  *   Then: Copy over all streams
- *
- * Given: A non mp4
- *   When: it has an imaged based stream
- *   Then: do not move to mp4 output
  *
  * Given: An mp4
  *   When: There isn't a 2c aac audio track
@@ -46,9 +46,12 @@ const globPath = "/Volumes/Library/TV/American Dad!/Season 1/*.mkv";
  *   Then: create an h.264 version?
  */
 
+let completed = 0, matches = 0;
 
 function convertMedia(media, done) {
     const basename = path.basename(media),
+        ext = path.extname(media),
+        output = media.replace(ext, ".mp4"),
         start = Date.now();
 
     async.waterfall([
@@ -58,7 +61,7 @@ function convertMedia(media, done) {
 
             const convertStatus = status.addItem("convert", {
                 label: basename,
-                custom: () => `${chalk.magenta(basename)} | ${progress.currentKbps}kb/s | ${progress.timemark}`,
+                custom: () => `${completed}/${matches} | ${chalk.magenta(basename)} | ${progress.currentKbps}kb/s | ${progress.timemark}`,
                 max: 100
             });
 
@@ -71,10 +74,13 @@ function convertMedia(media, done) {
                 })
                 .on("end", () => next())
                 .on('error', (err) => next(err))
-                .save(media.replace(".mkv", ".mp4"));
+                .save(output);
         },
+        next => fs.access(output, fs.constants.F_OK, next),
         next => fs.unlink(media, next)
     ], err => {
+        completed += 1;
+
         if (err) {
             console.log(`${chalk.red("✖")} Error processing ${basename} ${err.message}`);
 
@@ -82,6 +88,7 @@ function convertMedia(media, done) {
         }
 
         console.log(`${chalk.green("✔")} ${prettyMs(Date.now() - start)} | Processed ${basename}`);
+
         done();
     });
 }
@@ -89,11 +96,9 @@ function convertMedia(media, done) {
 async.waterfall([
     next => glob(globPath, next),
     (files, next) => {
-        console.log(`Processing ${files.length} items`);
+        matches = files.length;
 
-        status.start({
-            pattern: 'Total: {uptime.green} {spinner.cyan} | {convert.custom} | {convert.percentage} {convert.bar} '
-        });
+        status.start({ pattern });
 
         async.eachSeries(files, (file, cb) => {
             convertMedia(file, cb);
@@ -101,7 +106,6 @@ async.waterfall([
     }
 ], () => {
     status.stop();
+
+    console.log(`🎉 Finished processing ${completed} files`);
 });
-
-
-
