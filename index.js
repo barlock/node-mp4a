@@ -7,7 +7,8 @@ const async = require("async"),
     status = require("node-status"),
     console = status.console(),
     mediaConverter = require("./lib/media-converter"),
-    globPath = path.resolve(__dirname, argv._[0]);
+    globPath = path.resolve(__dirname, argv._[0]),
+    supportedExts = [ ".mp4", ".avi", ".mkv" ];
 
 /**
  * Given: A non mp4
@@ -35,11 +36,13 @@ const async = require("async"),
  *   Then: create an h.264 version?
  */
 
-
-
 async.waterfall([
     next => glob(globPath, next),
     (files, next) => {
+        files = files.filter(file => {
+            return supportedExts.includes(path.extname(file));
+        });
+
         console.log(`Processing ${files.length} files`);
 
         const converter = mediaConverter(status, files.length);
@@ -52,6 +55,5 @@ async.waterfall([
     }
 ], () => {
     status.stop();
-
     console.log(`🎉 Finished processing files`);
 });
