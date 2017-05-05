@@ -7,7 +7,7 @@ const async = require("async"),
     status = require("node-status"),
     console = status.console(),
     mediaConverter = require("./lib/media-converter"),
-    globPath = path.resolve(__dirname, argv._[0]),
+    globPath = path.resolve(__dirname, process.env.DIRECTORY || argv._[0], "**/*.*"),
     supportedExts = [ ".mp4", ".avi", ".mkv" ];
 
 /**
