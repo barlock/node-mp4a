@@ -6,10 +6,13 @@ const argv = require("yargs").argv,
     cron = process.env.CRON || argv.cron,
     directory =  process.env.DIRECTORY || argv._[0];
 
-if (cron) {
-    schedule.scheduleJob(cron, () => processFiles(directory));
+if (argv.cleanup) {
+    require("./lib/cleanup")(directory);
 } else {
-    processFiles(directory);
+    if (cron) {
+        schedule.scheduleJob(cron, () => processFiles(directory));
+    } else {
+        processFiles(directory);
+    }
 }
-
 
